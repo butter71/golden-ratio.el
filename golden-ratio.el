@@ -85,6 +85,11 @@ will not cause the window to be resized to the golden ratio."
   :group 'golden-ratio
   :type 'integer)
 
+(defcustom golden-ratio-height-override-modes nil
+  "A list of (major-mode . height) overrides."
+  :group 'golden-ratio
+  :type 'alist)
+
 (defcustom golden-ratio-exclude-buffer-regexp nil
   "A list of regexp's used to match buffer names.
 Switching to a buffer whose name matches one of these regexps
@@ -118,12 +123,14 @@ will prevent the window to be resized to the golden ratio."
     golden-ratio-adjust-factor))
 
 (defun golden-ratio--dimensions ()
-  (list (floor (/ (frame-height) golden-ratio--value))
-        (let ((width (floor  (* (/ (frame-width)  golden-ratio--value)
-                                (golden-ratio--scale-factor)))))
-          (if golden-ratio-max-width
-              (min golden-ratio-max-width width)
-            width))))
+  (list
+   (let ((height (golden-ratio-major-mode-height-override)))
+     (or height (floor (/ (frame-height) golden-ratio--value))))
+   (let ((width (floor  (* (/ (frame-width)  golden-ratio--value)
+                           (golden-ratio--scale-factor)))))
+     (if golden-ratio-max-width
+         (min golden-ratio-max-width width)
+       width))))
 
 (defun golden-ratio--resize-window (dimensions &optional window)
   (with-selected-window (or window (selected-window))
@@ -139,6 +146,9 @@ will prevent the window to be resized to the golden ratio."
   (or (memq major-mode golden-ratio-exclude-modes)
       (member (symbol-name major-mode)
               golden-ratio-exclude-modes)))
+
+(defun golden-ratio-major-mode-height-override ()
+  (alist-get major-mode golden-ratio-height-override-modes))
 
 ;;;###autoload
 (defun golden-ratio (&optional arg)
